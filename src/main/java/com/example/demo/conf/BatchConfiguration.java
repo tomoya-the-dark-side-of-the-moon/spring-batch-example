@@ -1,5 +1,7 @@
 package com.example.demo.conf;
 
+import java.util.List;
+
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.configuration.annotation.EnableJdbcJobRepository;
@@ -14,6 +16,9 @@ import org.springframework.batch.infrastructure.item.ItemReader;
 import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.batch.infrastructure.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.infrastructure.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.batch.infrastructure.item.support.CompositeItemProcessor;
+import org.springframework.batch.infrastructure.item.validator.BeanValidatingItemProcessor;
+import org.springframework.batch.infrastructure.item.validator.ValidationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -34,9 +39,21 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	ItemProcessor<Member, FullNameMember> itemProcessor() {
-		return item -> new FullNameMember(item.id(), item.firstName(), item.lastName(),
-				item.firstName() + " " + item.lastName());
+	ItemProcessor<Member, Member> beanValidatingItemProcessor() throws Exception {
+		BeanValidatingItemProcessor<Member> beanValidatingItemProcessor = new BeanValidatingItemProcessor<>();
+		beanValidatingItemProcessor.setFilter(false);
+		beanValidatingItemProcessor.afterPropertiesSet();
+
+		return beanValidatingItemProcessor;
+	}
+
+	@Bean
+	ItemProcessor<Member, FullNameMember> itemProcessor() throws Exception {
+		ItemProcessor<Member, FullNameMember> fullNameItemProcessor = item -> new FullNameMember(item.getId(),
+				item.getFirstName(), item.getLastName(), item.getFirstName() + " " + item.getLastName());
+
+		return new CompositeItemProcessor<Member, FullNameMember>(
+				List.of(beanValidatingItemProcessor(), fullNameItemProcessor));
 	}
 
 	@Bean
@@ -56,7 +73,8 @@ public class BatchConfiguration {
 			ItemProcessor<Member, FullNameMember> itemProcessor, ItemWriter<FullNameMember> itemWriter,
 			StepExecutionListener stepExecutionListener) {
 		return new StepBuilder(jobRepository).<Member, FullNameMember>chunk(5).reader(itemReader)
-				.processor(itemProcessor).writer(itemWriter).listener(stepExecutionListener).build();
+				.processor(itemProcessor).writer(itemWriter).skip(ValidationException.class).faultTolerant()
+				.listener(stepExecutionListener).build();
 	}
 
 	@Bean
