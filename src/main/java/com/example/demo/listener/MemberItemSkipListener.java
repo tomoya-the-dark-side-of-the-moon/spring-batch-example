@@ -23,7 +23,6 @@ public class MemberItemSkipListener implements SkipListener<Member, FullNameMemb
 				String defaultMessage = fieldError.getDefaultMessage();
 				logger.warn("{}: {}", field, defaultMessage);
 			}
-			logger.warn("aaa");
 		}
 	}
 
