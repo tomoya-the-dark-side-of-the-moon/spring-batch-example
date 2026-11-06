@@ -25,23 +25,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import com.example.demo.domain.FullNameMember;
 import com.example.demo.domain.Member;
 import com.example.demo.listener.MemberItemSkipListener;
 import com.example.demo.listener.MemberStepExecutionListener;
-import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @EnableJdbcJobRepository
 @Import(value = { DataSourceConfiguration.class })
 public class BatchConfiguration {
-
-	private final PlatformTransactionManager businessPlatformTransactionManager;
-
-	BatchConfiguration(PlatformTransactionManager businessPlatformTransactionManager) {
-		this.businessPlatformTransactionManager = businessPlatformTransactionManager;
-	}
 
 	@Bean
 	ItemReader<Member> itemReader() {
