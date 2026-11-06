@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:18
-    container_name: spring-batch-example-postgres
+    container_name: postgresql
     environment:
       POSTGRES_DB: business
       POSTGRES_USER: postgres
