@@ -7,6 +7,7 @@ import javax.sql.DataSource;
 import org.springframework.batch.core.configuration.annotation.EnableJdbcJobRepository;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.listener.SkipListener;
 import org.springframework.batch.core.listener.StepExecutionListener;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.Step;
@@ -25,6 +26,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import com.example.demo.domain.FullNameMember;
 import com.example.demo.domain.Member;
+import com.example.demo.listener.MemberItemSkipListener;
 import com.example.demo.listener.MemberStepExecutionListener;
 
 @Configuration
@@ -64,6 +66,11 @@ public class BatchConfiguration {
 	}
 
 	@Bean
+	SkipListener<Member, FullNameMember> skipListener() {
+		return new MemberItemSkipListener();
+	}
+
+	@Bean
 	StepExecutionListener stepExecutionListener(DataSource dataSource) {
 		return new MemberStepExecutionListener(dataSource);
 	}
@@ -71,10 +78,10 @@ public class BatchConfiguration {
 	@Bean
 	Step step(JobRepository jobRepository, ItemReader<Member> itemReader,
 			ItemProcessor<Member, FullNameMember> itemProcessor, ItemWriter<FullNameMember> itemWriter,
-			StepExecutionListener stepExecutionListener) {
+			StepExecutionListener stepExecutionListener, SkipListener<Member, FullNameMember> skipListener) {
 		return new StepBuilder(jobRepository).<Member, FullNameMember>chunk(5).reader(itemReader)
-				.processor(itemProcessor).writer(itemWriter).skip(ValidationException.class).faultTolerant()
-				.listener(stepExecutionListener).build();
+				.processor(itemProcessor).writer(itemWriter).skip(ValidationException.class).skipListener(skipListener)
+				.faultTolerant().listener(stepExecutionListener).build();
 	}
 
 	@Bean
