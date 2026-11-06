@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: spring-batch-example-postgres
+    environment:
+      POSTGRES_DB: business
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # PostgreSQL 18 以降のイメージは /var/lib/postgresql/data ではなくこのパスにマウントする
+      - postgres-data:/var/lib/postgresql
+      # ボリュームが空の初回起動時にのみ実行される
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d business"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
