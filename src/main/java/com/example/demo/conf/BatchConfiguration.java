@@ -20,18 +20,28 @@ import org.springframework.batch.infrastructure.item.file.builder.FlatFileItemRe
 import org.springframework.batch.infrastructure.item.support.CompositeItemProcessor;
 import org.springframework.batch.infrastructure.item.validator.BeanValidatingItemProcessor;
 import org.springframework.batch.infrastructure.item.validator.ValidationException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 
 import com.example.demo.domain.FullNameMember;
 import com.example.demo.domain.Member;
 import com.example.demo.listener.MemberItemSkipListener;
 import com.example.demo.listener.MemberStepExecutionListener;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 @EnableJdbcJobRepository
+@Import(value = { DataSourceConfiguration.class })
 public class BatchConfiguration {
+
+	private final PlatformTransactionManager businessPlatformTransactionManager;
+
+	BatchConfiguration(PlatformTransactionManager businessPlatformTransactionManager) {
+		this.businessPlatformTransactionManager = businessPlatformTransactionManager;
+	}
 
 	@Bean
 	ItemReader<Member> itemReader() {
@@ -59,10 +69,15 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	ItemWriter<FullNameMember> itemWriter(DataSource dataSource) {
-		return new JdbcBatchItemWriterBuilder<FullNameMember>().dataSource(dataSource).sql(
-				"INSERT INTO member (id, first_name, last_name, full_name) VALUES (:id, :firstName, :lastName, :fullName)")
-				.beanMapped().build();
+	ItemWriter<FullNameMember> itemWriter(@Qualifier("businessDataSource") DataSource dataSource) {
+		return new JdbcBatchItemWriterBuilder<FullNameMember>().dataSource(dataSource).sql("""
+				INSERT INTO member (id, first_name, last_name, full_name)
+				VALUES (CAST(:id AS INTEGER), :firstName, :lastName, :fullName)
+				ON CONFLICT (id) DO UPDATE SET
+					first_name = EXCLUDED.first_name,
+					last_name = EXCLUDED.last_name,
+					full_name = EXCLUDED.full_name
+				""").beanMapped().build();
 	}
 
 	@Bean
@@ -71,17 +86,19 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	StepExecutionListener stepExecutionListener(DataSource dataSource) {
+	StepExecutionListener stepExecutionListener(@Qualifier("businessDataSource") DataSource dataSource) {
 		return new MemberStepExecutionListener(dataSource);
 	}
 
 	@Bean
 	Step step(JobRepository jobRepository, ItemReader<Member> itemReader,
 			ItemProcessor<Member, FullNameMember> itemProcessor, ItemWriter<FullNameMember> itemWriter,
-			StepExecutionListener stepExecutionListener, SkipListener<Member, FullNameMember> skipListener) {
+			StepExecutionListener stepExecutionListener, SkipListener<Member, FullNameMember> skipListener,
+			@Qualifier("businessPlatformTransactionManager") PlatformTransactionManager businessPlatbusinessPlatformTransactionManager) {
 		return new StepBuilder(jobRepository).<Member, FullNameMember>chunk(5).reader(itemReader)
 				.processor(itemProcessor).writer(itemWriter).skip(ValidationException.class).skipListener(skipListener)
-				.faultTolerant().listener(stepExecutionListener).build();
+				.faultTolerant().listener(stepExecutionListener)
+				.transactionManager(businessPlatbusinessPlatformTransactionManager).build();
 	}
 
 	@Bean
