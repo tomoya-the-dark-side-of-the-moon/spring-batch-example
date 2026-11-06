@@ -15,7 +15,7 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.infrastructure.item.ItemProcessor;
 import org.springframework.batch.infrastructure.item.ItemReader;
 import org.springframework.batch.infrastructure.item.ItemWriter;
-import org.springframework.batch.infrastructure.item.database.builder.JdbcBatchItemWriterBuilder;
+import org.springframework.batch.infrastructure.item.database.builder.JpaItemWriterBuilder;
 import org.springframework.batch.infrastructure.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.infrastructure.item.support.CompositeItemProcessor;
 import org.springframework.batch.infrastructure.item.validator.BeanValidatingItemProcessor;
@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.orm.jpa.LocalEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.example.demo.domain.FullNameMember;
@@ -55,23 +56,25 @@ public class BatchConfiguration {
 
 	@Bean
 	ItemProcessor<Member, FullNameMember> itemProcessor() throws Exception {
-		ItemProcessor<Member, FullNameMember> fullNameItemProcessor = item -> new FullNameMember(item.getId(),
-				item.getFirstName(), item.getLastName(), item.getFirstName() + " " + item.getLastName());
+		ItemProcessor<Member, FullNameMember> fullNameItemProcessor = item -> {
+			FullNameMember fullNameMember = new FullNameMember();
+			fullNameMember.setId(Integer.parseInt(item.getId()));
+			fullNameMember.setFirstName(item.getFirstName());
+			fullNameMember.setLastName(item.getLastName());
+			fullNameMember.setFullName(item.getFirstName() + " " + item.getLastName());
+
+			return fullNameMember;
+		};
 
 		return new CompositeItemProcessor<Member, FullNameMember>(
 				List.of(beanValidatingItemProcessor(), fullNameItemProcessor));
 	}
 
 	@Bean
-	ItemWriter<FullNameMember> itemWriter(@Qualifier("businessDataSource") DataSource dataSource) {
-		return new JdbcBatchItemWriterBuilder<FullNameMember>().dataSource(dataSource).sql("""
-				INSERT INTO member (id, first_name, last_name, full_name)
-				VALUES (CAST(:id AS INTEGER), :firstName, :lastName, :fullName)
-				ON CONFLICT (id) DO UPDATE SET
-					first_name = EXCLUDED.first_name,
-					last_name = EXCLUDED.last_name,
-					full_name = EXCLUDED.full_name
-				""").beanMapped().build();
+	ItemWriter<FullNameMember> itemWriter(
+			@Qualifier("businessEntityManagerFactory") LocalEntityManagerFactoryBean entityManagerFactoryBean) {
+		return new JpaItemWriterBuilder<FullNameMember>().entityManagerFactory(entityManagerFactoryBean.getObject())
+				.usePersist(true).build();
 	}
 
 	@Bean
