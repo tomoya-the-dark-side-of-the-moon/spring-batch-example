@@ -14,6 +14,8 @@ import org.springframework.orm.jpa.LocalEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import com.example.demo.datasource.MemberRoutingDataSource;
+
 @Configuration
 public class DataSourceConfiguration {
 
@@ -24,7 +26,7 @@ public class DataSourceConfiguration {
 		return new DataSourceProperties();
 	}
 
-	@Bean
+	@Bean("batchDataSource")
 	@Primary
 	@BatchDataSource
 	DataSource batchDataSource() {
@@ -57,6 +59,11 @@ public class DataSourceConfiguration {
 	PlatformTransactionManager businessPlatformTransactionManager(
 			@Qualifier("businessDataSource") DataSource businessDataSource) {
 		return new JpaTransactionManager(businessEntityManagerFactory(businessDataSource).getObject());
+	}
+
+	@Bean("memberRoutingDataSource")
+	MemberRoutingDataSource memberRoutingDataSource() {
+		return new MemberRoutingDataSource();
 	}
 
 }
