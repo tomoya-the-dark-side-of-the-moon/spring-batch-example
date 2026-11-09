@@ -11,10 +11,9 @@ INSERT INTO server VALUES (3, 'localhost', 'user3', 'db3', 'password3');
 CREATE TABLE reservation (
 	id INTEGER NOT NULL,
 	file_name VARCHAR(40) NOT NULL,
-	status CHAR(2) NOT NULL,
 	PRIMARY KEY (id, file_name),
 	CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES server(id)
 );
-INSERT INTO reservation VALUES (1, 'bon_jovi.csv', '00');
-INSERT INTO reservation VALUES (2, 'metallica.csv', '00');
-INSERT INTO reservation VALUES (3, 'iron_maiden.csv', '00');
+INSERT INTO reservation VALUES (1, 'bon_jovi.csv');
+INSERT INTO reservation VALUES (2, 'metallica.csv');
+INSERT INTO reservation VALUES (3, 'iron_maiden.csv');
