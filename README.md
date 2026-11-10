@@ -6,3 +6,4 @@ separate-business-data-source: メタデータ用のDataSourceとビジネス用
 use-jpa-item-writer: JPAを利用してデータを書き込みます 
 use-routing-datasource: マルチテナントを想定し、CSVファイルごとに接続するデータベースを切り替えるようにしました  
 use-container: バッチをコンテナで動かすようにしました  
+use-graalvm: GraalVMによるnative-compileを利用するようにしました  
