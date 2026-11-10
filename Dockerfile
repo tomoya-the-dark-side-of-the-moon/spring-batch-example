@@ -1,21 +1,20 @@
-FROM gradle:jdk21 AS builder
-
+#FROM gradle:jdk21 AS builder
+FROM ghcr.io/graalvm/graalvm-community:25 AS builder
 COPY ./src/ /tmp/src/
 COPY ./gradle/ /tmp/gradle/
 COPY ./gradlew /tmp/
 COPY ./build.gradle /tmp/
 COPY ./settings.gradle /tmp/
 WORKDIR /tmp
-RUN ./gradlew clean bootJar
+RUN ./gradlew clean nativeCompile
 
-FROM eclipse-temurin:21-jre-alpine AS runner
-RUN apk add --no-cache tzdata && \
-    cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
-    echo "Asia/Tokyo" > /etc/timezone && \
-    apk del tzdata
-RUN addgroup springgroup && adduser -S springuser -G springgroup
-USER springuser
+FROM oraclelinux:9-slim AS runner
+ENV TZ=Asia/Tokyo
+RUN microdnf install -y shadow-utils && \
+    groupadd springgroup && useradd -r -g springgroup springuser && \
+    microdnf remove -y shadow-utils && microdnf clean all
 WORKDIR /usr/app
-RUN chown -R springuser:springgroup /usr/app
-COPY --from=builder --chown=springuser:springgroup /tmp/build/libs/spring-batch-example-0.0.1-SNAPSHOT.jar spring-batch-example.jar
-CMD ["java", "-jar", "spring-batch-example.jar"]
+COPY --from=builder --chown=springuser:springgroup /tmp/build/native/nativeCompile/spring-batch-example spring-batch-example
+USER springuser
+CMD ["/usr/app/spring-batch-example"]
+
