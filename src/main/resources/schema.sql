@@ -5,9 +5,9 @@ CREATE TABLE server (
 	db_name VARCHAR(20) NOT NULL,
 	password VARCHAR(20) NOT NULL
 );
-INSERT INTO server VALUES (1, 'localhost', 'user1', 'db1', 'password1');
-INSERT INTO server VALUES (2, 'localhost', 'user2', 'db2', 'password2');
-INSERT INTO server VALUES (3, 'localhost', 'user3', 'db3', 'password3');
+INSERT INTO server VALUES (1, '172.21.0.3', 'user1', 'db1', 'password1');
+INSERT INTO server VALUES (2, '172.21.0.3', 'user2', 'db2', 'password2');
+INSERT INTO server VALUES (3, '172.21.0.3', 'user3', 'db3', 'password3');
 CREATE TABLE reservation (
 	id INTEGER NOT NULL,
 	file_name VARCHAR(40) NOT NULL,
